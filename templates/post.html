@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/style/post.css">
+    <link rel="icon" type="image/png" href="/static/favicon/favicon.png">
+    <title>Document</title>
+</head>
+
+<body>
+    <article>
+        <header>
+            <div class="header-wrapper">
+                <h1><a href="/">Forum</a></h1>
+                {{ if .User.Username }}
+                <div class="user">
+                    <button onclick="showModal('notification')" class="notify"><i class="bi bi-bell"></i></button>
+                    <div class="modal" id="notification" onclick="closeModal('notification');">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                Notifications
+                                <span class='close' onclick="closeModal('notification')"></span>
+                            </div>
+                            <div class="modal-body">
+                                {{ range .Notifications }}
+                                <span><a href="/profile/{{ .From }}?posts=created">{{ .From }}</a> {{ .Description }} <a
+                                        href="/post/{{ .PostId }}">{{ .PostId }}</a></span>
+                                {{ else }}
+                                <span>No notifications for you</span>
+                                {{ end }}
+                            </div>
+                        </div>
+                    </div>
+                    <a href="/profile/{{ .User.Username }}?posts=created">Profile <i class="bi bi-person"></i></a>
+                    <a href="/post/create">Create Post<i class="bi bi-pencil-square"></i></a>
+                    <a href="/auth/logout">Log-Out <i class="bi bi-box-arrow-right"></i></a>
+                </div>
+                {{ else }}
+                <div class="auth">
+                    <a href="/auth/signin" class="sign">Sign-In</a>
+                    <a href="/auth/signup" class="sign">Sign-Up</a>
+                </div>
+                {{ end }}
+            </div>
+        </header>
+        <main>
+            <div class="main-wrapper">
+                <div class="post">
+                    <div class="post-body">
+                        <div class="post-creater">
+                            <h1><a href="/profile/{{ .Post.Creater }}?posts=created">{{ .Post.Creater }}</a></h1>
+                        </div>
+                        <div class="post-title">
+                            <h1>{{ .Post.Title }}</h1>
+                        </div>
+                        <div class="post-description">
+                            {{ .Post.Description }}
+                        </div>
+                        {{ if .Post.Images }}
+                        <div class="img-container">
+                            {{ range $index, $img := .Post.Images }}
+                            <img src="{{ $img }}" alt="img-{{ $index }}" id="img-{{ $index }}">
+                            {{ end }}
+                        </div>
+                        <button id="prevBtn">Prev</button>
+                        <button id="nextBtn">Next</button>
+                        {{ end }}
+                    </div>
+                    <div class="post-info">
+                        <h2>Post Info</h2>
+                        <div class="reaction">
+                            <div class="react">
+                                <p class="tooltip">{{ .Post.Likes }}
+                                    {{ if .PostLikes }}
+                                    <span class="tooltiptext">{{ range .PostLikes }} {{ . }} <br> {{ end }}</span>
+                                    {{ end }}
+                                </p>
+                                <form class="reactPost" action="/post/like/{{ .Post.Id }}" method="post">
+                                    <button id="like" {{ if not .User.Username }} disabled {{ end }}>
+                                        <i id="like-i" class="bi bi-hand-thumbs-up"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="react">
+                                <p class="tooltip">{{ .Post.Dislikes }}
+                                    {{ if .PostDislikes }}
+                                    <span class="tooltiptext">{{ range .PostDislikes }} {{ . }} <br> {{ end }}</span>
+                                    {{ end }}
+                                </p>
+                                <form class="reactPost" action="/post/dislike/{{ .Post.Id }}" method="post">
+                                    <button id="dislike" {{ if not .User.Username }} disabled {{ end }}>
+                                        <i id="dislike-i" class="bi bi-hand-thumbs-down"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="tags">
+                            {{ range $tag := .Post.Category }}
+                            <a href="/?category={{ $tag }}" class="tag">{{ $tag }}</a>
+                            {{ end }}
+                        </div>
+                        <h2>Similar Posts</h2>
+                        <div class="similar-posts">
+                            {{ range .SimilarPosts }}
+                            <a href="/post/{{ .Id }}">{{ .Title}}</a><br>
+                            {{ else }}
+                            <h3>Empty</h3>
+                            {{ end }}
+                        </div>
+                        {{ if eq .User.Username .Post.Creater }}
+                        <h2>Post Modification</h2>
+                        <div class="post-modify">
+                            <form action="/post/delete/{{ .Post.Id }}" method="post">
+                                <button class="btn"><i class="bi bi-trash"></i></button>
+                            </form>
+                            <button class="btn" onclick="showModal('change-post')">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <div class="modal" id="change-post" onclick="closeModal('change-post');">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        Change Post
+                                        <span class='close' onclick="closeModal('change-post')"></span>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form class="change-post" action="/post/change/{{ .Post.Id }}" method="POST"
+                                            autocomplete="off">
+                                            <fieldset>
+                                                <legend>Title</legend>
+                                                <input type="text" name="title" value="{{ .Post.Title }}" required>
+                                            </fieldset>
+                                            <fieldset>
+                                                <legend>Description</legend>
+                                                <textarea name="description" required>{{ .Post.Description }}</textarea>
+                                            </fieldset>
+                                            <fieldset>
+                                                <legend>Category</legend>
+                                                <input type="text" name="category" value="{{ range .Post.Category }}{{ . }} {{ end }}" required>
+                                            </fieldset>
+                                            <div class="shown-categories"></div>
+                                            <button class="btn">Change</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {{ end }}
+                    </div>
+                </div>
+                <h1>Comments</h1>
+                {{ $user := .User.Username }}
+                <div class="comments">
+                    <div class="all-comments">
+                        {{ range .Comments }}
+                        <div class="one-comment">
+                            <h3>{{ .Creater }}</h3>
+                            <p>{{ .Text }}</p>
+                            <div class="comment-info">
+                                <div class="comment-reaction">
+                                    <p>{{ .Likes }}</p>
+                                    <form class="reactComment" action="/comment/like/{{ .Id }}" method="post">
+                                        <button id="like {{ .Id }}">
+                                            <i class="bi bi-hand-thumbs-up"></i>
+                                        </button>
+                                    </form>
+                                    <p>{{ .Dislikes }}</p>
+                                    <form class="reactComment"  action="/comment/dislike/{{ .Id }}" method="post">
+                                        <button id="dislike {{ .Id }}">
+                                            <i class="bi bi-hand-thumbs-down"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                {{ if eq .Creater $user }}
+                                <div class="comment-modification">
+                                    <form action="/comment/delete/{{ .Id }}" method="post">
+                                        <button class="btn comment"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                    <button class="btn comment" onclick="showModal('change-comment{{.Id}}');"><i
+                                            class="bi bi-pencil-square"></i></button>
+                                    <div class="modal" id="change-comment{{.Id}}"
+                                        onclick="closeModal('change-comment{{.Id}}');">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                Change Comment
+                                                <span class='close'
+                                                    onclick="closeModal('change-comment{{.Id}}')"></span>
+                                            </div>
+                                            <div class="modal-body">
+                                                <form class="change-comment" action="/comment/change/{{ .Id }}"
+                                                    method="POST" autocomplete="off">
+                                                    <fieldset>
+                                                        <legend>Text</legend>
+                                                        <textarea name="text" required>{{ .Text }}</textarea>
+                                                    </fieldset>
+                                                    <button class="btn">Change</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {{ end }}
+                            </div>
+                        </div>
+                        {{ else }}
+                        <h1>Empty</h1>
+                        {{ end }}
+                    </div>
+                    {{ if .User.Username }}
+                    <form action="/post/{{ .Post.Id }}" method="post" class="send-comment">
+                        <fieldset>
+                            <legend>Your Comment</legend>
+                            <textarea id="Comment" name="comment" required></textarea>
+                        </fieldset>
+                        <button>Send</button>
+                    </form>
+                    {{ end }}
+                </div>
+            </div>
+        </main>
+        <footer>
+            <div class="footer-wrapper">
+                <div class="footer-header"></div>
+                <div class="footer-body"></div>
+                <div class="footer-footer"></div>
+            </div>
+        </footer>
+    </article>
+    <script>
+        const currentuser = '{{ .User.Username }}'
+        if (currentuser !== '') {
+            const likes = '{{ .PostLikes }}'
+            const arrLikes = likes.slice(1, likes.length - 1).split(" ")
+            if (arrLikes.includes(currentuser)) {
+                const i = document.getElementById("like-i")
+                i.style.color = 'green'
+            }
+
+            const dislikes = '{{ .PostDislikes }}'
+            const arrDislikes = dislikes.slice(1, dislikes.length - 1).split(" ")
+            if (arrDislikes.includes(currentuser)) {
+                const i = document.getElementById("dislike-i")
+                i.style.color = 'red'
+            }
+
+            const commentLikes = `{{ .CommentsLikes }}`
+            var mapLikes = JSON.parse(commentLikes)
+            Object.entries(mapLikes).forEach(element => {
+                if (element[1] != null) {
+                    if (element[1].includes(currentuser)) {
+                        const el = document.getElementById(`like ${element[0]}`)
+                        el.style.color = "green"
+                    }
+                }
+            });
+
+            const commentDislikes = `{{ .CommentsDislikes }}`
+            var mapDislikes = JSON.parse(commentDislikes)
+            Object.entries(mapDislikes).forEach(element => {
+                if (element[1] != null) {
+                    if (element[1].includes(currentuser)) {
+                        const el = document.getElementById(`dislike ${element[0]}`)
+                        el.style.color = "red"
+                    }
+                }
+            });
+        }
+        const category = document.querySelector('.shown-categories')
+        const outputCategory = document.querySelector('.category')
+        const t = '{{ .Post.Category }}'
+        var usedTags = t.slice(1, t.length - 1).split(' ')
+        usedTags.forEach(element => {
+            outputCategory.value += element + " "
+            category.innerHTML += `<div class='change-tag'>` + element + `<span class='delete-tag' onclick='del(this)' /></div>`
+        })
+    </script>
+    <script src="/static/script/modal.js"></script>
+    <script src="/static/script/changePost.js"></script>
+    <script src="/static/script/imgSlide.js"></script>
+</body>
+
+</html>
